@@ -77,3 +77,14 @@ The API endpoint is public by design so a device can retrieve the image and sche
 The upload/save endpoint requires the admin password.
 
 For this first version, keep the BMP reasonably small because the image is returned as Base64 inside JSON.
+
+
+image to schdualer v2
+# EPD Image Scheduler V2
+
+Run `supabase_v2.sql` once in Supabase SQL Editor, then deploy on Render with the same environment variables as V1.
+
+Modes: BW 1bpp, generic BWR/BWY dual-plane 1bpp, generic 7-color indexed 4bpp.
+
+Important: colored EPD packing is controller-specific; verify against your panel sample code.
+
