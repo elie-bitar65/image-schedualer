@@ -1,0 +1,17 @@
+{
+  "name": "image-scheduler-v1",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Upload one BMP image and a list of times, retrieve both from a JSON API.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
+    "express": "^4.21.0"
+  }
+}
