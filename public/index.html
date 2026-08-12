@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Image Scheduler</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+      color: #172033;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: 40px auto;
+      padding: 0 18px;
+    }
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 24px;
+      box-shadow: 0 8px 30px rgba(0,0,0,.08);
+      margin-bottom: 18px;
+    }
+    h1 { margin-top: 0; }
+    h2 { margin-bottom: 10px; }
+    label { display:block; margin: 12px 0 6px; font-weight: 600; }
+    input, button {
+      font: inherit;
+    }
+    input[type="password"], input[type="time"] {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #ccd3df;
+      border-radius: 8px;
+    }
+    input[type="file"] { width: 100%; }
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+    .primary {
+      background: #172033;
+      color: white;
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px;
+    }
+    .secondary {
+      background: #edf1f7;
+      color: #172033;
+    }
+    .danger {
+      background: #ffe8e8;
+      color: #9a2020;
+    }
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .row input { flex: 1; }
+    #preview {
+      display:none;
+      max-width:100%;
+      margin-top:14px;
+      border:1px solid #ddd;
+      border-radius:8px;
+      image-rendering: pixelated;
+    }
+    .time-item {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 0;
+      border-bottom:1px solid #eee;
+    }
+    .muted { color:#657087; font-size:14px; }
+    #status {
+      min-height: 22px;
+      margin-top: 12px;
+      font-weight: 600;
+    }
+    code {
+      word-break: break-all;
+      background: #f1f3f6;
+      padding: 2px 5px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Image Scheduler</h1>
+      <p class="muted">Upload one BMP image and define the times your device should use.</p>
+
+      <label for="adminPassword">Admin password</label>
+      <input id="adminPassword" type="password" placeholder="Enter admin password" />
+
+      <label for="imageInput">BMP image</label>
+      <input id="imageInput" type="file" accept=".bmp,image/bmp" />
+      <img id="preview" alt="BMP preview" />
+    </div>
+
+    <div class="card">
+      <h2>Schedule</h2>
+      <div class="row">
+        <input id="timeInput" type="time" />
+        <button class="secondary" id="addTimeBtn" type="button">Add time</button>
+      </div>
+      <div id="scheduleList"></div>
+
+      <button class="primary" id="saveBtn" type="button">Save image + schedule</button>
+      <div id="status"></div>
+    </div>
+
+    <div class="card">
+      <h2>Retrieval API</h2>
+      <p>Your device will retrieve everything from:</p>
+      <code id="apiUrl"></code>
+    </div>
+  </div>
+
+<script>
+  let imageBase64 = null;
+  let schedule = [];
+
+  const imageInput = document.getElementById("imageInput");
+  const preview = document.getElementById("preview");
+  const timeInput = document.getElementById("timeInput");
+  const scheduleList = document.getElementById("scheduleList");
+  const statusEl = document.getElementById("status");
+
+  document.getElementById("apiUrl").textContent =
+    window.location.origin + "/api/config";
+
+  function renderSchedule() {
+    schedule.sort();
+    scheduleList.innerHTML = "";
+
+    if (schedule.length === 0) {
+      scheduleList.innerHTML = '<p class="muted">No times added yet.</p>';
+      return;
+    }
+
+    schedule.forEach((time) => {
+      const row = document.createElement("div");
+      row.className = "time-item";
+
+      const text = document.createElement("strong");
+      text.textContent = time;
+
+      const del = document.createElement("button");
+      del.className = "danger";
+      del.textContent = "Delete";
+      del.onclick = () => {
+        schedule = schedule.filter(t => t !== time);
+        renderSchedule();
+      };
+
+      row.appendChild(text);
+      row.appendChild(del);
+      scheduleList.appendChild(row);
+    });
+  }
+
+  document.getElementById("addTimeBtn").onclick = () => {
+    const value = timeInput.value;
+    if (!value) return;
+
+    if (!schedule.includes(value)) {
+      schedule.push(value);
+    }
+
+    timeInput.value = "";
+    renderSchedule();
+  };
+
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    if (!file) return;
+
+    const isBmp =
+      file.type === "image/bmp" ||
+      file.name.toLowerCase().endsWith(".bmp");
+
+    if (!isBmp) {
+      alert("Please choose a BMP file.");
+      imageInput.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      imageBase64 = reader.result;
+      preview.src = imageBase64;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  });
+
+  document.getElementById("saveBtn").onclick = async () => {
+    const password = document.getElementById("adminPassword").value;
+
+    if (!password) {
+      statusEl.textContent = "Enter the admin password.";
+      return;
+    }
+
+    if (!imageBase64) {
+      statusEl.textContent = "Choose a BMP image first.";
+      return;
+    }
+
+    statusEl.textContent = "Saving...";
+
+    try {
+      const response = await fetch("/api/save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password
+        },
+        body: JSON.stringify({
+          image: imageBase64,
+          schedule
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Save failed.");
+      }
+
+      schedule = result.schedule || schedule;
+      renderSchedule();
+      statusEl.textContent = "Saved successfully.";
+    } catch (err) {
+      statusEl.textContent = err.message;
+    }
+  };
+
+  async function loadExistingConfig() {
+    try {
+      const response = await fetch("/api/config");
+      if (!response.ok) return;
+
+      const config = await response.json();
+
+      if (config.image) {
+        imageBase64 = config.image;
+        preview.src = imageBase64;
+        preview.style.display = "block";
+      }
+
+      if (Array.isArray(config.schedule)) {
+        schedule = config.schedule;
+      }
+
+      renderSchedule();
+    } catch (_) {
+      renderSchedule();
+    }
+  }
+
+  loadExistingConfig();
+</script>
+</body>
+</html>
