@@ -1,14 +1,14 @@
 {
-  "name": "image-scheduler-v1",
-  "version": "1.0.0",
+  "name": "epd-image-scheduler-v2",
+  "version": "2.0.0",
   "private": true,
-  "description": "Upload one BMP image and a list of times, retrieve both from a JSON API.",
+  "description": "Configurable e-paper image converter + scheduler with Base64 API output.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
-    "node": ">=18"
+    "node": ">=18 <27"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
